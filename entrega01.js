@@ -1,57 +1,45 @@
+const fs = require('fs')
+
 class ProductManager {
 
-    constructor() {
-        this.products = []
+    constructor(path) {
+        this.path = path
     }
 
-    getProducts = () => { return this.products }
-    getProductID = () => {
-        const count = this.products.length
-        if (count == 0) return 1;
-
-        const lastEvent = this.products[count - 1]
-        const lastID = lastEvent.id
-        const productID = lastID + 1
-
-        return productID;
-    }
-    getProductByID = (productID) => {
-        const productFound = this.products.find(e => e.id == productID)
-        if (productFound) {
-            console.log("This produtc is: ", productFound.title)
-        } else { console.log("Not Found"); }
-    }
-
-    addproducts = (title, description, price, thumbnail, code, stock) => {
-        const id = this.getProductID()
-        const product = {
-            id,
-            title,
-            description,
-            price,
-            thumbnail,
-            code,
-            stock
+    read = () => {
+        if (fs.existsSync(this.path)) {
+            return fs.promises.readFile(this.path, 'utf-8').then(r => JSON.parse(r))
         }
-        const codeDuplicated = (element) => element.code == product.code
-        if (!this.products.some(codeDuplicated)) {
-            this.products.push(product)
-        } else {
-            console.log('Is Duplicated');
-        }
-
+        return []
     }
+
+    getNextID = list => {
+        const count = list.length
+        return (count > 0) ? list[count - 1].id +1 : 1
+    }
+
+    write = list => {
+        return fs.promises.writeFile(this.path, JSON.stringify(list))
+    }
+
+    getProducts = async () => {
+        const data = await this.read()
+
+        return data
+    }
+
+    addProducts = async (obj) => {
+        const list = await this.read()
+        const nextID = this.getNextID(list)
+        obj.id = nextID
+
+        list.push(obj)
+
+        await this.write(list)
+    }
+
 
 }
 
-const productManager = new ProductManager()
-console.log('First call', productManager.getProducts())
+module.exports = ProductManager
 
-productManager.addproducts('Mouse Razer', 'Deathadder V2 Lite', 150, 'sin Imagen', '123abc', 30 )
-productManager.addproducts('Mouse Logitech', 'MX Master 3', 200, 'sin Imagen', '123abc', 10 )
-productManager.addproducts('Mouse Stell Serie', 'Aerox 5 Wireless', 400, 'sin Imagen', '124abc', 10 )
-productManager.addproducts('Mouse Genius', 'DX-100', 20, 'sin Imagen', '123abc', 100 )
-
-productManager.getProductByID(1)
-
-console.log('After push', productManager.getProducts())
